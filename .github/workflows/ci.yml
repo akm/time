@@ -1,0 +1,42 @@
+name: CI
+
+on:
+  push:
+    branches:
+      - "**"
+
+permissions:
+  contents: read
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        go: ["1.24", "1.25"]
+    name: Test on Go ${{ matrix.go }}
+    steps:
+      # https://github.com/actions/checkout
+      - uses: actions/checkout@v6
+
+      # https://github.com/actions/setup-go
+      - uses: actions/setup-go@v6
+        with:
+          go-version: ${{ matrix.go }}
+
+      - name: Check golang version/env
+        run: |
+          set -x
+          go version
+          go env
+
+      - run: make build
+
+      # - name: lint
+      #   run: make lint
+      - name: golangci-lint
+        uses: golangci/golangci-lint-action@v9
+        with:
+          version: v2.8
+
+      - run: make test

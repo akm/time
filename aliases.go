@@ -80,4 +80,18 @@ const (
 	Second      = orig.Second
 	Minute      = orig.Minute
 	Hour        = orig.Hour
+
+	// Month
+	January   = orig.January
+	February  = orig.February
+	March     = orig.March
+	April     = orig.April
+	May       = orig.May
+	June      = orig.June
+	July      = orig.July
+	August    = orig.August
+	September = orig.September
+	October   = orig.October
+	November  = orig.November
+	December  = orig.December
 )

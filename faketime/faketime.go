@@ -4,8 +4,6 @@ import (
 	"context"
 	"errors"
 	"fmt"
-	"log/slog"
-	"os"
 	"strconv"
 	"strings"
 	orig "time"
@@ -15,13 +13,13 @@ import (
 )
 
 type Faketime struct {
-	filePath string
+	provider Provider
 	layout   string
 }
 
-func NewFaketime(filePath string, layout string) *Faketime {
+func NewFaketime(provider Provider, layout string) *Faketime {
 	return &Faketime{
-		filePath: filePath,
+		provider: provider,
 		layout:   layout,
 	}
 }
@@ -31,26 +29,9 @@ var (
 )
 
 func (ft *Faketime) Start(ctx context.Context, fn func(context.Context) error) error {
-	stat, err := os.Stat(ft.filePath)
-	if err != nil {
-		if os.IsNotExist(err) {
-			slog.DebugContext(ctx, "time file does not exist, proceeding without setting time", "file", ft.filePath)
-		} else {
-			slog.WarnContext(ctx, "failed to stat file", "error", err, "file", ft.filePath)
-		}
-		return fn(ctx)
-	}
-	if stat.IsDir() {
-		return fmt.Errorf("%w: path is a directory, not a file: %s", ErrInvalidFaketimeFileContent, ft.filePath)
-	}
-
-	data, err := os.ReadFile(ft.filePath)
+	s, err := ft.provider.Get(ctx)
 	if err != nil {
 		return err
-	}
-	s := strings.TrimSpace(string(data))
-	if s == "" {
-		return fmt.Errorf("%w: time file is empty: %s", ErrInvalidFaketimeFileContent, ft.filePath)
 	}
 
 	parts := strings.Split(s, " ")

@@ -25,13 +25,13 @@ var (
 	ErrInvalidFaketimeFileContent = errors.New("invalid faketime file content")
 )
 
-func (ft *Runner) Start(ctx context.Context, fn func(context.Context) error) error {
-	s, err := ft.provider.Get(ctx)
+func (r *Runner) Start(ctx context.Context, fn func(context.Context) error) error {
+	s, err := r.provider.Get(ctx)
 	if err != nil {
 		return err
 	}
 
-	fakeTime, err := Parse(s, ft.layout)
+	fakeTime, err := Parse(s, r.layout)
 	if err != nil {
 		return err
 	}

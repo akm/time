@@ -12,13 +12,13 @@ import (
 	"github.com/akm/time/testtime"
 )
 
-type Faketime struct {
+type Runner struct {
 	provider Provider
 	layout   string
 }
 
-func NewFaketime(provider Provider, layout string) *Faketime {
-	return &Faketime{
+func NewRunner(provider Provider, layout string) *Runner {
+	return &Runner{
 		provider: provider,
 		layout:   layout,
 	}
@@ -28,7 +28,7 @@ var (
 	ErrInvalidFaketimeFileContent = errors.New("invalid faketime file content")
 )
 
-func (ft *Faketime) Start(ctx context.Context, fn func(context.Context) error) error {
+func (ft *Runner) Start(ctx context.Context, fn func(context.Context) error) error {
 	s, err := ft.provider.Get(ctx)
 	if err != nil {
 		return err

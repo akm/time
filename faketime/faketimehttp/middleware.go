@@ -18,7 +18,7 @@ func Middleware(filePath string, layout string) func(next http.Handler) http.Han
 			s, err := provider.Get(ctx)
 			if err != nil {
 				slog.ErrorContext(ctx, "failed to get faketime", "error", err, "file", filePath)
-				next.ServeHTTP(w, r)
+				http.Error(w, "faketime error", http.StatusInternalServerError)
 				return
 			}
 
@@ -30,7 +30,7 @@ func Middleware(filePath string, layout string) func(next http.Handler) http.Han
 			ft, err := faketime.Parse(s, layout)
 			if err != nil {
 				slog.ErrorContext(ctx, "failed to parse faketime", "error", err, "file", filePath, "content", s)
-				next.ServeHTTP(w, r)
+				http.Error(w, "faketime error", http.StatusInternalServerError)
 				return
 			}
 

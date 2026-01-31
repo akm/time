@@ -1,17 +1,25 @@
 package faketime
 
 import (
+	"context"
+	"errors"
 	"fmt"
 	"strconv"
 	"strings"
+	orig "time"
 
 	"github.com/akm/time"
+	"github.com/akm/time/testtime"
 )
 
 type FakeTime struct {
 	Time  time.Time
 	Ratio float64
 }
+
+var (
+	ErrInvalidFaketimeFileContent = errors.New("invalid faketime file content")
+)
 
 func Parse(s string, layout string) (*FakeTime, error) {
 	parts := strings.Split(s, " ")
@@ -72,4 +80,17 @@ func Parse(s string, layout string) (*FakeTime, error) {
 	}
 
 	return &FakeTime{Time: t, Ratio: ratio}, nil
+}
+
+func (ft *FakeTime) Run(ctx context.Context, fn func(context.Context) error) error {
+	if ft.Ratio == 0 {
+		defer testtime.SetTime(&ft.Time)()
+		return fn(ctx)
+	}
+	t0 := orig.Now()
+	defer testtime.SetTimeFunc(func() time.Time {
+		elapsed := time.Duration(float64(orig.Since(t0)) * ft.Ratio)
+		return ft.Time.Add(elapsed)
+	})()
+	return fn(ctx)
 }

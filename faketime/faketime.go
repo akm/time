@@ -82,15 +82,18 @@ func Parse(s string, layout string) (*FakeTime, error) {
 	return &FakeTime{Time: t, Ratio: ratio}, nil
 }
 
-func (ft *FakeTime) Run(ctx context.Context, fn func(context.Context) error) error {
+func (ft *FakeTime) Setup(ctx context.Context) func() {
 	if ft.Ratio == 0 {
-		defer testtime.SetTime(&ft.Time)()
-		return fn(ctx)
+		return testtime.SetTime(&ft.Time)
 	}
 	t0 := orig.Now()
-	defer testtime.SetTimeFunc(func() time.Time {
+	return testtime.SetTimeFunc(func() time.Time {
 		elapsed := time.Duration(float64(orig.Since(t0)) * ft.Ratio)
 		return ft.Time.Add(elapsed)
-	})()
+	})
+}
+
+func (ft *FakeTime) Run(ctx context.Context, fn func(context.Context) error) error {
+	defer ft.Setup(ctx)()
 	return fn(ctx)
 }

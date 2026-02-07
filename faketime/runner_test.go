@@ -34,6 +34,107 @@ func TestNewRunner(t *testing.T) {
 	}
 }
 
+func TestRunner_Build(t *testing.T) {
+	layout := "2006-01-02 15:04:05"
+	providerErr := errors.New("provider error")
+
+	tests := []struct {
+		name      string
+		provider  *mockProvider
+		wantTime  time.Time
+		wantRatio float64
+		wantErr   error
+	}{
+		{
+			name: "valid time returns FakeTime",
+			provider: &mockProvider{
+				value: "2024-01-02 15:04:05",
+			},
+			wantTime:  time.Date(2024, 1, 2, 15, 4, 5, 0, time.UTC),
+			wantRatio: 0,
+		},
+		{
+			name: "valid time with @ prefix",
+			provider: &mockProvider{
+				value: "@2024-03-15 10:30:00",
+			},
+			wantTime:  time.Date(2024, 3, 15, 10, 30, 0, 0, time.UTC),
+			wantRatio: 0,
+		},
+		{
+			name: "valid time with ratio",
+			provider: &mockProvider{
+				value: "2024-01-02 15:04:05 x2",
+			},
+			wantTime:  time.Date(2024, 1, 2, 15, 4, 5, 0, time.UTC),
+			wantRatio: 2.0,
+		},
+		{
+			name: "valid time with + suffix",
+			provider: &mockProvider{
+				value: "2024-01-02 15:04:05 +",
+			},
+			wantTime:  time.Date(2024, 1, 2, 15, 4, 5, 0, time.UTC),
+			wantRatio: 1.0,
+		},
+		{
+			name: "provider returns error",
+			provider: &mockProvider{
+				err: providerErr,
+			},
+			wantErr: providerErr,
+		},
+		{
+			name: "empty string from provider returns parse error",
+			provider: &mockProvider{
+				value: "",
+			},
+			wantErr: ErrInvalidFaketimeFileContent,
+		},
+		{
+			name: "invalid time format returns parse error",
+			provider: &mockProvider{
+				value: "invalid-time",
+			},
+			wantErr: ErrInvalidFaketimeFileContent,
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			runner := NewRunner(tt.provider, layout)
+			ctx := context.Background()
+
+			got, err := runner.Build(ctx)
+
+			if tt.wantErr != nil {
+				if err == nil {
+					t.Fatalf("expected error %v, got nil", tt.wantErr)
+				}
+				if !errors.Is(err, tt.wantErr) {
+					t.Fatalf("expected error %v, got %v", tt.wantErr, err)
+				}
+				return
+			}
+
+			if err != nil {
+				t.Fatalf("unexpected error: %v", err)
+			}
+
+			if got == nil {
+				t.Fatal("expected FakeTime, got nil")
+			}
+
+			if !got.Time.Equal(tt.wantTime) {
+				t.Errorf("Time = %v, want %v", got.Time, tt.wantTime)
+			}
+			if got.Ratio != tt.wantRatio {
+				t.Errorf("Ratio = %v, want %v", got.Ratio, tt.wantRatio)
+			}
+		})
+	}
+}
+
 func TestRunner_Start(t *testing.T) {
 	layout := "2006-01-02 15:04:05"
 	providerErr := errors.New("provider error")

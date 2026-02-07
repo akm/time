@@ -137,6 +137,76 @@ func TestParse(t *testing.T) {
 	}
 }
 
+func TestFakeTime_Setup(t *testing.T) {
+	t.Run("ratio 0 sets fixed time", func(t *testing.T) {
+		ft := FakeTime{
+			Time:  time.Date(2024, 1, 2, 15, 4, 5, 0, time.UTC),
+			Ratio: 0,
+		}
+		ctx := context.Background()
+
+		cleanup := ft.Setup(ctx)
+		defer cleanup()
+
+		now := time.Now()
+		expected := time.Date(2024, 1, 2, 15, 4, 5, 0, time.UTC)
+		if !now.Equal(expected) {
+			t.Errorf("time.Now() = %v, want %v", now, expected)
+		}
+	})
+
+	t.Run("ratio 1.0 starts time from specified point", func(t *testing.T) {
+		ft := FakeTime{
+			Time:  time.Date(2024, 1, 2, 15, 4, 5, 0, time.UTC),
+			Ratio: 1.0,
+		}
+		ctx := context.Background()
+
+		cleanup := ft.Setup(ctx)
+		defer cleanup()
+
+		start := time.Now()
+		expected := time.Date(2024, 1, 2, 15, 4, 5, 0, time.UTC)
+		if start.Before(expected) {
+			t.Errorf("time.Now() = %v, should be at or after %v", start, expected)
+		}
+	})
+
+	t.Run("ratio 2.0 makes time pass twice as fast", func(t *testing.T) {
+		ft := FakeTime{
+			Time:  time.Date(2024, 1, 2, 15, 4, 5, 0, time.UTC),
+			Ratio: 2.0,
+		}
+		ctx := context.Background()
+
+		cleanup := ft.Setup(ctx)
+		defer cleanup()
+
+		start := time.Now()
+		expected := time.Date(2024, 1, 2, 15, 4, 5, 0, time.UTC)
+		if start.Before(expected) {
+			t.Errorf("time.Now() = %v, should be at or after %v", start, expected)
+		}
+	})
+
+	t.Run("cleanup restores original time", func(t *testing.T) {
+		ft := FakeTime{
+			Time:  time.Date(2024, 1, 2, 15, 4, 5, 0, time.UTC),
+			Ratio: 0,
+		}
+		ctx := context.Background()
+
+		cleanup := ft.Setup(ctx)
+		cleanup()
+
+		now := time.Now()
+		fakeTime := time.Date(2024, 1, 2, 15, 4, 5, 0, time.UTC)
+		if now.Equal(fakeTime) {
+			t.Error("time should be restored after cleanup")
+		}
+	})
+}
+
 func TestFakeTime_Run(t *testing.T) {
 	tests := []struct {
 		name          string

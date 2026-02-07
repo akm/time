@@ -16,16 +16,25 @@ func NewRunner(provider Provider, layout string) *Runner {
 	}
 }
 
-func (r *Runner) Start(ctx context.Context, fn func(context.Context) error) error {
+func (r *Runner) Build(ctx context.Context) (*FakeTime, error) {
 	s, err := r.provider.Get(ctx)
 	if err != nil {
-		return err
+		return nil, err
 	}
 
 	fakeTime, err := Parse(s, r.layout)
 	if err != nil {
-		return err
+		return nil, err
 	}
 
-	return fakeTime.Run(ctx, fn)
+	return fakeTime, nil
+}
+
+func (r *Runner) Start(ctx context.Context, fn func(context.Context) error) error {
+	fakeTime, err := r.Build(ctx)
+	if err != nil {
+		return err
+	}
+	defer fakeTime.Setup(ctx)()
+	return fn(ctx)
 }
